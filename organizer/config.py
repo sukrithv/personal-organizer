@@ -46,7 +46,7 @@ DEFAULT_CONFIG = {
     "ollama": {
         "enabled": False,
         "host": "http://localhost:11434",
-        "model": "llama3.2:1b",
+        "model": "gemma3:4b",
         "keep_alive": "0",
         "read_content": True,
         "preview_chars": 1500,
