@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-file-organizer"
+version = "0.3.0"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+ml = ["scikit-learn>=1.3", "numpy>=1.24"]
+pdf = ["pdfminer.six>=20221105"]
+images = ["Pillow>=10.0"]
+audio = ["mutagen>=1.47"]
+watch = ["watchdog>=3.0"]
+all = ["ai-file-organizer[ml,pdf,images,audio,watch]"]
+dev = ["pytest>=7.4", "ruff>=0.1", "scikit-learn>=1.3", "numpy>=1.24",
+       "pdfminer.six>=20221105", "fpdf2>=2.7"]
+
+[project.scripts]
+organizer = "organizer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["organizer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E701", "E702"]
