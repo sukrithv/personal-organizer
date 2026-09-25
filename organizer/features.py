@@ -1,9 +1,9 @@
 """
 features.py — turn a FileContext into the text a model learns from / predicts on.
 
-Pulled forward from Phase 3 because the CorrectionLog needs to store features at
-correction time. The trained classifier (Phase 3) MUST use this same function at
-train and predict time, so it lives in one place.
+The CorrectionLog needs to store features at correction time, and the trained
+classifier must use this same function at train and predict time, so it lives
+in one place.
 """
 
 from __future__ import annotations

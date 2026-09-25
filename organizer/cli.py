@@ -1,9 +1,10 @@
 """
 cli.py — commands: init / plan / run / watch / undo / history / correct.
 
-Phase 2: moves are recorded in SQLite (cross-session undo + history), optional
---dedupe routes exact duplicates to a holding folder, and `correct` captures a
-labeled example for Phase 3 training.
+Moves are recorded in SQLite (cross-session undo + history). Optional
+--dedupe routes exact duplicates to a holding folder (add --near-duplicates to
+also catch re-saved/re-exported near-duplicates by content similarity), and
+`correct` captures a labeled example for the trained classifier.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from pathlib import Path
 from .classifiers import ollama_available
 from .config import DEFAULT_CONFIG, IGNORE_SUFFIXES, default_config_path, load_config
 from .core import FileContext
-from .dedupe import DuplicateIndex
+from .dedupe import DuplicateIndex, NearDuplicateIndex
 from .extractors import extract
 from .features import featurize
 from .pipeline import (
@@ -77,6 +78,11 @@ def apply_overrides(cfg, args):
         cfg["ollama"]["host"] = args.ollama_host
     if getattr(args, "dedupe", False):
         cfg["dedupe"]["enabled"] = True
+    if getattr(args, "near_duplicates", False):
+        cfg["dedupe"]["enabled"] = True
+        cfg["dedupe"]["near_duplicates"] = True
+    if getattr(args, "near_threshold", None) is not None:
+        cfg["dedupe"]["near_threshold"] = args.near_threshold
     if getattr(args, "review_below", None) is not None:
         cfg["review_below"] = args.review_below
 
@@ -104,12 +110,21 @@ def setup(args, default_on):
         sys.exit(1)
     use_llm, llm_ok = resolve_llm(cfg, args, default_on)
     dupe_index = None
+    near_dupe_index = None
     if cfg["dedupe"]["enabled"]:
         dupe_index = DuplicateIndex()
         seed = dest_root_for(root, cfg)
         print(C.dim(f"Indexing {seed} for duplicates…"))
         dupe_index.scan(seed)
-    chain = build_chain(cfg, use_llm, llm_ok, dupe_index)
+        if cfg["dedupe"].get("near_duplicates"):
+            near_dupe_index = NearDuplicateIndex(
+                n_tokens=cfg["dedupe"].get("near_duplicate_tokens", 100),
+                threshold=cfg["dedupe"].get("near_threshold", 0.9),
+                min_tokens=cfg["dedupe"].get("near_duplicate_min_tokens", 20),
+            )
+            print(C.dim(f"Indexing {seed} for near-duplicates…"))
+            near_dupe_index.scan(seed)
+    chain = build_chain(cfg, use_llm, llm_ok, dupe_index, near_dupe_index)
     return cfg, root, chain
 
 
@@ -388,6 +403,11 @@ def build_parser():
         sp.add_argument("--date-source", choices=["modified", "created"])
         sp.add_argument("--include-hidden", action="store_true")
         sp.add_argument("--dedupe", action="store_true")
+        sp.add_argument("--near-duplicates", action="store_true",
+                        help="also catch near-duplicate documents (re-saves, "
+                             "re-exports) by cosine similarity of their leading tokens")
+        sp.add_argument("--near-threshold", type=float, default=None,
+                        help="cosine similarity threshold for --near-duplicates (default 0.9)")
         sp.add_argument("--review-below", type=float, default=None,
                         help="Route guesses below this confidence to the review folder")
         sp.add_argument("--no-color", action="store_true")

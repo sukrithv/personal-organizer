@@ -1,12 +1,12 @@
 """
-store.py — durable state in SQLite (Phase 2).
+store.py — durable state in SQLite.
 
 TransactionLog   every applied move: queryable history + cross-session undo.
-CorrectionLog    labeled examples (features -> the folder you actually wanted).
-                 This is the training data Phase 3 consumes.
+CorrectionLog    labeled examples (features -> the folder actually wanted).
+                 This is the training data the trained classifier consumes.
 
-Replaces the Phase 1 JSON journal. Old .json journals under the state dir are no
-longer read by undo; the DB is the source of truth from here on.
+Replaces the original JSON journal. Old .json journals under the state dir
+are no longer read by undo; the database is the source of truth.
 """
 
 from __future__ import annotations

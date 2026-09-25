@@ -1,9 +1,9 @@
 """
 extractors.py — turn raw bytes into signal for the classifiers.
 
-Phase 2: real content extraction. Each extractor lazily imports its library so
-the package still works with nothing installed (a missing lib just means that
-file gets no preview). Install what you need via the pyproject extras:
+Each extractor lazily imports its library so the package still works with
+nothing installed (a missing library just means that file gets no preview).
+Install the extractors you need via the pyproject extras:
     pip install -e ".[pdf,images,audio]"
 
 Extractors fill:

@@ -38,7 +38,14 @@ DEFAULT_CONFIG = {
     "unmatched_folder": "Other",
     "model_path": None,
     "db_path": None,
-    "dedupe": {"enabled": False, "folder": "_Duplicates"},
+    "dedupe": {
+        "enabled": False,
+        "folder": "_Duplicates",
+        "near_duplicates": False,
+        "near_threshold": 0.9,
+        "near_duplicate_tokens": 100,
+        "near_duplicate_min_tokens": 20,
+    },
     "trained_threshold": 0.55,
     "review_below": 0.0,
     "review_folder": "_Review",
@@ -67,8 +74,8 @@ def load_config(path=None):
         with open(path) as f:
             user = json.load(f)
         for k, v in user.items():
-            if k == "ollama" and isinstance(v, dict):
-                cfg["ollama"].update(v)
+            if isinstance(v, dict) and isinstance(cfg.get(k), dict):
+                cfg[k].update(v)
             else:
                 cfg[k] = v
     return cfg

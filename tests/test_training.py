@@ -1,4 +1,4 @@
-"""Phase 3: bootstrap from organized folders, train, and classify.
+"""Bootstrap from organized folders, train, and classify.
 
 Skips cleanly if scikit-learn isn't installed (it's in the `ml` extra)."""
 import random

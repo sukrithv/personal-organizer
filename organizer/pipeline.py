@@ -1,8 +1,8 @@
 """
 pipeline.py — assemble the chain and turn a folder into a list of moves.
 
-Phase 2 additions: an optional DuplicateClassifier at the front of the chain,
-and Move now carries source + confidence so the SQLite log can record them.
+An optional DuplicateClassifier sits at the front of the chain, and Move
+carries source + confidence so the SQLite log can record them.
 """
 
 from __future__ import annotations
@@ -19,17 +19,18 @@ from .classifiers import (
 )
 from .config import IGNORE_SUFFIXES
 from .core import Classifier, Decision, FileContext, run_chain
-from .dedupe import DuplicateClassifier, DuplicateIndex
+from .dedupe import DuplicateClassifier, DuplicateIndex, NearDuplicateIndex
 from .extractors import extract
 from .training import DEFAULT_MODEL_PATH
 
 
 def build_chain(cfg, use_llm: bool, llm_ok: bool,
-                dupe_index: DuplicateIndex | None = None) -> list[Classifier]:
+                dupe_index: DuplicateIndex | None = None,
+                near_dupe_index: NearDuplicateIndex | None = None) -> list[Classifier]:
     chain: list[Classifier] = []
     if dupe_index is not None:
         folder = cfg.get("dedupe", {}).get("folder", "_Duplicates")
-        chain.append(DuplicateClassifier(dupe_index, folder))
+        chain.append(DuplicateClassifier(dupe_index, folder, near_dupe_index))
     chain.append(RuleClassifier(cfg))
     mp = cfg.get("model_path") or DEFAULT_MODEL_PATH
     if Path(mp).exists():

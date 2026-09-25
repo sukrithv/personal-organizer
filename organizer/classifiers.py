@@ -1,11 +1,11 @@
 """
 classifiers.py — the decision-makers, each implementing core.Classifier.
 
-Phase 1 chain (built in pipeline.build_chain):
-    RuleClassifier   deterministic user rules            (conf 1.0)
-    TrainedClassifier  inert until Phase 3 (returns None)
-    LLMClassifier    Ollama, keep_alive=0 so it unloads  (conf ~0.65)
-    TypeClassifier   type + date fallback, always answers (conf 0.4)
+Chain assembled by pipeline.build_chain:
+    RuleClassifier     deterministic user rules             (conf 1.0)
+    TrainedClassifier  returns None until a model is trained
+    LLMClassifier      Ollama, keep_alive=0 so it unloads    (conf ~0.65)
+    TypeClassifier     type + date fallback, always answers  (conf 0.4)
 """
 
 from __future__ import annotations

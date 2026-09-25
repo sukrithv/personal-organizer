@@ -1,10 +1,10 @@
 """
-training.py — build the trained classifier from data you already have (Phase 3).
+training.py — build the trained classifier from data already on disk.
 
-The cold-start trick: your ALREADY-ORGANIZED folders are a labeled dataset — a
-file in Documents/Taxes/2024 is an example whose label is that folder. Walk them
-to bootstrap a model from your own conventions, then keep adding the corrections
-you log with `organizer correct`.
+The cold-start approach: an already-organized folder tree is a labeled
+dataset — a file in Documents/Taxes/2024 is an example whose label is that
+folder. Walking it bootstraps a model from existing conventions, then further
+corrections logged with `organizer correct` keep improving it.
 
 Model: TF-IDF (word 1–2 grams UNION char 3–5 grams — filenames carry signal in
 substrings) -> LogisticRegression. A few MB, trains in seconds, gives calibrated

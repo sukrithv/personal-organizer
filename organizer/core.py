@@ -5,7 +5,7 @@ FileContext   what we know about a file
 Decision      a classifier's answer: where, how sure, why, from whom
 Classifier    the one-method interface every decision-maker implements
 run_chain     tries classifiers in order, takes the first confident answer
-Policy        turns confidence into an outcome (used from Phase 3 on)
+Policy        turns confidence into an outcome
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ def run_chain(
     min_confidence: float = 0.0,
 ) -> Decision | None:
     """Return the first Decision at/above the bar; else the best below-bar
-    guess; else None. In Phase 1 the bar is 0.0, so ordering decides precedence
+    guess; else None. With the bar at 0.0, ordering decides precedence
     (rules -> llm -> type)."""
     best: Decision | None = None
     for clf in classifiers:
@@ -89,7 +89,7 @@ class Outcome(Enum):
 
 @dataclass
 class Policy:
-    """Confidence -> Outcome. Defined now, wired into moving in Phase 3."""
+    """Confidence -> Outcome."""
     auto_above: float = 0.80
     review_above: float = 0.50
 

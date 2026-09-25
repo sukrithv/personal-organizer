@@ -6,8 +6,8 @@ classifiers** — duplicate check, your rules, an optional local model, then typ
 downloads as they land. Every move is recorded in SQLite, so `undo` and
 `history` work across sessions.
 
-Phases 1–2 are done. See `ROADMAP.md` for what's next (a trained classifier that
-learns your structure, confidence gating, a daemon/UI).
+See `roadmap.md` for what's next (confidence gating, a daemon/UI, and
+plugin support).
 
 ## Install
 
@@ -41,18 +41,20 @@ organizer init                            # write organizer.config.json
 The chain, cheap to expensive (`organizer/pipeline.py:build_chain`):
 
 1. **DuplicateClassifier** — with `--dedupe`, routes an exact byte-duplicate to
-   `_Duplicates/` (moved together, never deleted).
+   `_Duplicates/` (moved together, never deleted). Add `--near-duplicates` to
+   also catch re-saved/re-exported near-duplicates by cosine similarity of
+   their leading content.
 2. **RuleClassifier** — your deterministic rules (confidence 1.0).
-3. **TrainedClassifier** — learns your folders. *Phase 3; skipped unless a model
-   file exists.*
-4. **LLMClassifier** — Ollama, only if enabled and reachable. Now sees extracted
+3. **TrainedClassifier** — learns your folders. Skipped unless a model file
+   exists.
+4. **LLMClassifier** — Ollama, only if enabled and reachable. Sees extracted
    **content** (PDF/DOCX text, audio tags), not just the filename.
 5. **TypeClassifier** — type + date fallback that always answers. Uses a photo's
    EXIF "date taken" when available, not the download date.
 
 `run_chain` returns the first confident answer, so ordering sets precedence.
 
-## Content extraction (Phase 2)
+## Content extraction
 
 `organizer/extractors.py` fills a content preview and metadata per file type:
 PDF text (pdfminer.six), DOCX text (stdlib), image EXIF date/camera (Pillow),
@@ -60,19 +62,19 @@ audio tags (mutagen). A missing library or unreadable file just means less
 signal — extraction never breaks a run. Scanned PDFs (no text layer) are flagged
 for future OCR.
 
-## State (Phase 2)
+## State
 
 SQLite at `~/.file-organizer/organizer.db`:
 
 - **actions** — every move (source classifier, confidence, reason); powers
   `undo` and `history`.
-- **corrections** — labeled examples from `correct`; the training set Phase 3
-  consumes.
+- **corrections** — labeled examples from `correct`; the training set the
+  trained classifier consumes.
 
 ## Develop
 
 ```bash
-pytest          # 34 tests
+pytest
 ruff check .
 ```
 
@@ -83,9 +85,9 @@ organizer/
   core.py         FileContext, Decision, Classifier, run_chain, Policy
   config.py       defaults + config loading
   extractors.py   PDF / DOCX / EXIF / audio content extraction
-  features.py     featurize() shared by corrections + the Phase 3 trainer
-  dedupe.py       hashing + duplicate index + DuplicateClassifier
-  classifiers.py  Duplicate / Rule / Type / LLM (real), Trained (Phase 3)
+  features.py     featurize() shared by corrections + the trainer
+  dedupe.py       hashing/cosine-similarity duplicate detection + DuplicateClassifier
+  classifiers.py  Duplicate / Rule / Type / LLM / Trained classifiers
   pipeline.py     build_chain, build_plan, classify_one
   store.py        SQLite TransactionLog + CorrectionLog
   cli.py          init / plan / run / watch / undo / history / correct

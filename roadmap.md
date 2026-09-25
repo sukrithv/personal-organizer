@@ -1,59 +1,64 @@
 # Roadmap
 
-The plan for growing this from a working organizer into a tool that learns your
-structure. **Phases 1–3 are done** (this package); Phase 4 is ahead.
+This document tracks the project's progression from a rule-based file mover
+into a tool that learns a user's organizational structure, along with what
+remains ahead.
 
-Guiding principle: don't build ahead of pain. Run it on your real Downloads,
-collect annoyances, and let that list drive what you build next.
+Design principle: extend the classifier chain rather than special-casing new
+behavior. Each capability is a new classifier inserted into the chain; nothing
+else needs to change.
 
-## The architecture (the part to protect)
+## Architecture
 
 Every decision-maker implements one method — `classify(ctx) -> Decision | None`
 — and `run_chain` tries them cheap-to-expensive, taking the first confident
-answer. New capability = new classifier, inserted in the chain. Nothing else
-changes.
+answer.
 
 ```
-file -> extractors (enrich) -> [Rule -> Trained -> LLM -> Type] -> Decision -> move + journal
+file -> extractors (enrich) -> [Duplicate -> Rule -> Trained -> LLM -> Type] -> Decision -> move + journal
 ```
 
-## Phase 1 — package + the seam  ✅ DONE
+## Completed
 
+**Package and classifier interface**
 - Installable package, `organizer` console command, JSON-journal undo.
-- Rules / LLM / type-sorting all behind the `Classifier` interface.
-- `pytest` suite (core, config, classifiers, pipeline, mocked LLM).
+- Rules / LLM / type-sorting unified behind the `Classifier` interface.
+- `pytest` suite covering core, config, classifiers, pipeline, and a mocked LLM.
 
-## Phase 2 — see more, decide better  ✅ DONE
+**Content extraction and duplicate detection**
+- Content extractors for PDF, DOCX, image EXIF, and audio tags
+  (`extractors.py`), installed via the `pdf` / `images` / `audio` extras.
+- Exact-duplicate detection via file hashing, and near-duplicate detection via
+  cosine similarity over each document's leading tokens (`dedupe.py`).
+- SQLite-backed `TransactionLog` replacing the original JSON journal, giving
+  queryable history and multi-session undo.
 
-- **Extractors**: implement the PDF / EXIF / audio stubs in `extractors.py`
-  (they're registered no-ops now). PDF text and photo "date taken" are the big
-  wins. Install via the `pdf` / `images` / `audio` extras.
-- **Duplicate detection**: hash files, skip or link exact dupes.
-- **SQLite** `TransactionLog` (stubbed in `store.py`) replacing the JSON journal
-  — buys queryable history and multi-session undo.
+**Trained classifier**
+- `TrainedClassifier` bootstraps labels from already-organized folders (the
+  folder name is the label), fits TF-IDF (char 3–5 grams) + LogisticRegression,
+  and saves a compact model. Installed via the `ml` extra; once
+  `cfg["model_path"]` points at a trained model it joins the chain ahead of
+  the LLM classifier.
+- `CorrectionLog` records manual corrections as labeled examples for
+  retraining.
 
-## Phase 3 — make it learn you  ✅ DONE
+## Planned
 
-- **Trained classifier** (`TrainedClassifier` is a live stub that defers today):
-  bootstrap labels from folders you've *already* organized (the folder is the
-  label), fit TF-IDF(char 3–5 grams) + LogisticRegression, save a few-MB model.
-  Install via the `ml` extra. Wire `cfg["model_path"]` and it auto-joins the
-  chain ahead of the LLM.
-- **Confidence gating**: `Policy` (already in `core.py`) routes low-confidence
-  files to a review/quarantine folder instead of a wrong guess.
-- **Learn from corrections**: log every undo / manual move as a labeled example
-  (`CorrectionLog`, stubbed) and retrain periodically — cheap, seconds.
+**Confidence gating**
+- Route low-confidence decisions to a review/quarantine folder instead of
+  applying an uncertain guess. `Policy` (`core.py`) defines the confidence
+  thresholds; wiring it into the move pipeline is the remaining step.
 
-## Phase 4 — product surface
+**Product surface**
+- Daemon (systemd / launchd) with multi-folder support and config hot-reload.
+- Event-driven watcher (watchdog/inotify/FSEvents) behind the existing
+  interface, with polling retained as the zero-dependency fallback.
+- Review UI (a TUI or a small local web page) backed by `CorrectionLog`.
+- Plugin support via entry points for third-party classifiers, extractors,
+  and actions.
 
-- Daemon (systemd / launchd), multi-folder, config hot-reload.
-- Event-driven watcher (watchdog/inotify/FSEvents) behind the same interface;
-  keep polling as the zero-dep fallback.
-- Review UI (Textual TUI or tiny local web page) feeding the CorrectionLog.
-- Plugins via entry points: third-party classifiers / extractors / actions.
+## Note on corrections
 
-## The one habit to start now
-
-Log corrections from day one — even before training anything. It's the raw
-material the trained model, retrieval, and any eventual fine-tuning all need,
-and it's expensive to recreate later.
+Corrections logged via `organizer correct` are the training data the trained
+classifier, and any future retrieval or fine-tuning work, depends on. Logging
+them consistently from early use avoids having to reconstruct that data later.
